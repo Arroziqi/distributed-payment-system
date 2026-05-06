@@ -1,0 +1,84 @@
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"transaction-service/internal/config"
+	delivery "transaction-service/internal/delivery/http"
+	"transaction-service/internal/observability"
+	pgrepo "transaction-service/internal/infrastructure/postgres"
+	rmq "transaction-service/internal/infrastructure/rabbitmq"
+	"transaction-service/internal/usecase"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
+	ctx := context.Background()
+
+	dbPool, err := pgxpool.New(ctx, cfg.PostgresDSN)
+	if err != nil {
+		log.Fatalf("connect postgres: %v", err)
+	}
+	defer dbPool.Close()
+
+	rabbitConn, err := amqp.Dial(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatalf("connect rabbitmq: %v", err)
+	}
+	defer rabbitConn.Close()
+	rabbitCh, err := rabbitConn.Channel()
+	if err != nil {
+		log.Fatalf("create rabbitmq channel: %v", err)
+	}
+	defer rabbitCh.Close()
+
+	if err := rabbitCh.ExchangeDeclare(cfg.RabbitExchange, "topic", true, false, false, false, nil); err != nil {
+		log.Fatalf("declare exchange: %v", err)
+	}
+
+	txRepo := pgrepo.NewTransactionRepository(dbPool)
+	pub := rmq.NewPublisher(rabbitCh, cfg.RabbitExchange)
+	txUC := usecase.NewTransactionUsecase(txRepo, pub, cfg.IdempotencyTTL)
+
+	r := gin.New()
+	r.Use(gin.Logger(), gin.Recovery(), observability.GinMiddleware(cfg.ServiceName))
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	observability.SetServiceUp(cfg.ServiceName)
+	h := delivery.NewHandler(txUC)
+	h.RegisterRoutes(r)
+
+	server := &http.Server{
+		Addr:    ":" + cfg.HTTPPort,
+		Handler: r,
+	}
+
+	go func() {
+		log.Printf("%s listening on :%s", cfg.ServiceName, cfg.HTTPPort)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen and serve: %v", err)
+		}
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("graceful shutdown failed: %v", err)
+	}
+}
