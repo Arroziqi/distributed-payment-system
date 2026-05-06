@@ -22,12 +22,12 @@ var (
 )
 
 type AuthUsecase struct {
-	users       repository.UserRepository
-	refresh     repository.RefreshTokenRepository
-	hasher      PasswordHasher
-	token       TokenManager
-	accessTTL   time.Duration
-	refreshTTL  time.Duration
+	users      repository.UserRepository
+	refresh    repository.RefreshTokenRepository
+	hasher     PasswordHasher
+	token      TokenManager
+	accessTTL  time.Duration
+	refreshTTL time.Duration
 }
 
 func NewAuthUsecase(
@@ -112,6 +112,7 @@ type AuthTokens struct {
 	RefreshToken string `json:"refresh_token"`
 	TokenType    string `json:"token_type"`
 	ExpiresIn    int64  `json:"expires_in"`
+	UserId       string `json:"user_id"`
 }
 
 func (u *AuthUsecase) Login(ctx context.Context, in LoginInput) (AuthTokens, error) {
@@ -203,5 +204,6 @@ func (u *AuthUsecase) issueTokens(ctx context.Context, userID string, email stri
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
 		ExpiresIn:    int64(u.accessTTL.Seconds()),
+		UserId:       userID,
 	}, nil
 }

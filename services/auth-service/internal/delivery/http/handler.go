@@ -17,14 +17,17 @@ func NewAuthHandler(auth *usecase.AuthUsecase) AuthHandler {
 	return AuthHandler{auth: auth}
 }
 
-func (h AuthHandler) RegisterRoutes(r *gin.Engine) {
+func (h AuthHandler) RegisterRoutes(r *gin.Engine, secret string) {
 	r.GET("/healthz", h.healthz)
 
-	auth := r.Group("/auth")
-	auth.POST("/register", h.register)
-	auth.POST("/login", h.login)
-	auth.POST("/refresh", h.refresh)
-	auth.POST("/logout", h.logout)
+	public := r.Group("/auth")
+	public.POST("/register", h.register)
+	public.POST("/login", h.login)
+	public.POST("/refresh", h.refresh)
+
+	protected := r.Group("/auth")
+	protected.Use(AuthMiddleware(secret))
+	protected.POST("/logout", h.logout)
 }
 
 type registerRequest struct {
@@ -166,6 +169,7 @@ type logoutRequest struct {
 // @Accept json
 // @Produce json
 // @Param payload body logoutRequest true "Logout payload"
+// @Security BearerAuth
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string

@@ -1,4 +1,3 @@
-basePath: /
 info:
   contact: {}
   description: Notification service API documentation.
@@ -35,7 +34,14 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get notification detail
       tags:
       - notifications
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

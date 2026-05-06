@@ -31,6 +31,9 @@ import (
 // @title Auth Service API
 // @version 1.0
 // @description Authentication service API documentation.
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 // @BasePath /
 func main() {
 	cfg, err := config.Load()
@@ -76,7 +79,7 @@ func main() {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	observability.SetServiceUp(cfg.ServiceName)
 	handler := delivery.NewAuthHandler(authUC)
-	handler.RegisterRoutes(router)
+	handler.RegisterRoutes(router, cfg.JWTAccessSecret)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.HTTPPort,

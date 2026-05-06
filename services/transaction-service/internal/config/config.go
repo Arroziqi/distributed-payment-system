@@ -14,6 +14,7 @@ type Config struct {
 	RabbitExchange  string
 	IdempotencyTTL  time.Duration
 	ShutdownTimeout time.Duration
+	JWTAccessSecret string
 }
 
 func Load() (Config, error) {
@@ -33,6 +34,7 @@ func Load() (Config, error) {
 		RabbitExchange:  env("RABBITMQ_EXCHANGE", "payments.events"),
 		IdempotencyTTL:  idemTTL,
 		ShutdownTimeout: shutdownTimeout,
+		JWTAccessSecret: env("JWT_ACCESS_SECRET", "dev-access-secret"),
 	}
 	if cfg.PostgresDSN == "" {
 		return Config{}, fmt.Errorf("POSTGRES_DSN is required")

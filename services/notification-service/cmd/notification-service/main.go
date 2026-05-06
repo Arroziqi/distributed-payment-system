@@ -31,6 +31,9 @@ import (
 // @title Notification Service API
 // @version 1.0
 // @description Notification service API documentation.
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 // @BasePath /
 func main() {
 	cfg, err := config.Load()
@@ -70,7 +73,7 @@ func main() {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	observability.SetServiceUp(cfg.ServiceName)
 	h := delivery.NewHandler()
-	h.RegisterRoutes(router)
+	h.RegisterRoutes(router, cfg.JWTAccessSecret)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.HTTPPort,

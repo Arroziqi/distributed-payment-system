@@ -28,6 +28,7 @@ services:
       POSTGRES_DSN: postgres://postgres:postgres@postgres-wallet:5432/wallet_db?sslmode=disable
       REDIS_ADDR: redis:6379
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      JWT_ACCESS_SECRET: dev-access-secret
     ports:
       - "8082:8080"
     depends_on:
@@ -45,6 +46,7 @@ services:
       POSTGRES_DSN: postgres://postgres:postgres@postgres-transaction:5432/transaction_db?sslmode=disable
       REDIS_ADDR: redis:6379
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      JWT_ACCESS_SECRET: dev-access-secret
     ports:
       - "8083:8080"
     depends_on:
@@ -61,6 +63,7 @@ services:
       HTTP_PORT: "8080"
       POSTGRES_DSN: postgres://postgres:postgres@postgres-notification:5432/notification_db?sslmode=disable
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      JWT_ACCESS_SECRET: dev-access-secret
     ports:
       - "8084:8080"
     depends_on:

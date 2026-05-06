@@ -12,9 +12,12 @@ func NewHandler() Handler {
 	return Handler{}
 }
 
-func (h Handler) RegisterRoutes(r *gin.Engine) {
+func (h Handler) RegisterRoutes(r *gin.Engine, secret string) {
 	r.GET("/healthz", h.healthz)
-	r.GET("/notifications/:id", h.getNotification)
+
+	protected := r.Group("/")
+	protected.Use(AuthMiddleware(secret))
+	protected.GET("/notifications/:id", h.getNotification)
 }
 
 // healthz godoc
@@ -35,6 +38,7 @@ func (h Handler) healthz(c *gin.Context) {
 // @Tags notifications
 // @Produce json
 // @Param id path string true "Notification ID"
+// @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Router /notifications/{id} [get]
 func (h Handler) getNotification(c *gin.Context) {

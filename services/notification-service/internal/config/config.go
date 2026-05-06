@@ -15,6 +15,7 @@ type Config struct {
 	Queue           string
 	RoutingKey      string
 	ShutdownTimeout time.Duration
+	JWTAccessSecret string
 }
 
 func Load() (Config, error) {
@@ -31,6 +32,7 @@ func Load() (Config, error) {
 		Queue:           env("RABBITMQ_QUEUE", "notification.transaction.success"),
 		RoutingKey:      env("RABBITMQ_ROUTING_KEY", "transaction.completed"),
 		ShutdownTimeout: shutdownTimeout,
+		JWTAccessSecret: env("JWT_ACCESS_SECRET", "dev-access-secret"),
 	}
 	if cfg.PostgresDSN == "" {
 		return Config{}, fmt.Errorf("POSTGRES_DSN is required")

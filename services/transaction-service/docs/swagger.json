@@ -6,7 +6,6 @@
         "contact": {},
         "version": "1.0"
     },
-    "basePath": "/",
     "paths": {
         "/healthz": {
             "get": {
@@ -32,6 +31,11 @@
         },
         "/transactions": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -75,6 +79,11 @@
         },
         "/transactions/payments": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -143,6 +152,11 @@
         },
         "/transactions/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -224,6 +238,13 @@
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

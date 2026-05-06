@@ -18,11 +18,14 @@ func NewHandler(uc *usecase.TransactionUsecase) Handler {
 	return Handler{uc: uc}
 }
 
-func (h Handler) RegisterRoutes(r *gin.Engine) {
+func (h Handler) RegisterRoutes(r *gin.Engine, secret string) {
 	r.GET("/healthz", h.healthz)
-	r.POST("/transactions/payments", h.processPayment)
-	r.GET("/transactions", h.list)
-	r.GET("/transactions/:id", h.detail)
+
+	protected := r.Group("/")
+	protected.Use(AuthMiddleware(secret))
+	protected.POST("/transactions/payments", h.processPayment)
+	protected.GET("/transactions", h.list)
+	protected.GET("/transactions/:id", h.detail)
 }
 
 type processPaymentRequest struct {
@@ -40,6 +43,7 @@ type processPaymentRequest struct {
 // @Produce json
 // @Param Idempotency-Key header string true "Idempotency key"
 // @Param payload body processPaymentRequest true "Payment payload"
+// @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 409 {object} map[string]string
@@ -85,6 +89,7 @@ func (h Handler) processPayment(c *gin.Context) {
 // @Produce json
 // @Param limit query int false "Limit"
 // @Param offset query int false "Offset"
+// @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} map[string]string
 // @Router /transactions [get]
@@ -104,6 +109,7 @@ func (h Handler) list(c *gin.Context) {
 // @Tags transactions
 // @Produce json
 // @Param id path string true "Transaction ID"
+// @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
