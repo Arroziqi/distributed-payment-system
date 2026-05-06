@@ -123,12 +123,12 @@ func TestTopupAndBalance(t *testing.T) {
 	if w.AvailableBalance != 150 {
 		t.Fatalf("expected 150, got %d", w.AvailableBalance)
 	}
-	balance, err := uc.BalanceInquiry(context.Background(), "user-1")
+	wallet, err := uc.BalanceInquiry(context.Background(), "user-1")
 	if err != nil {
 		t.Fatalf("balance inquiry failed: %v", err)
 	}
-	if balance != 150 {
-		t.Fatalf("expected 150, got %d", balance)
+	if wallet.AvailableBalance != 150 {
+		t.Fatalf("expected 150, got %d", wallet.AvailableBalance)
 	}
 }
 

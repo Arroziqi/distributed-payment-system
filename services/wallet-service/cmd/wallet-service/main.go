@@ -30,6 +30,9 @@ import (
 // @title Wallet Service API
 // @version 1.0
 // @description Wallet service API documentation.
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 // @BasePath /
 func main() {
 	cfg, err := config.Load()
@@ -65,7 +68,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	observability.SetServiceUp(cfg.ServiceName)
 	h := delivery.NewHandler(walletUC)
-	h.RegisterRoutes(r)
+	h.RegisterRoutes(r, cfg.JWTAccessSecret)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.HTTPPort,

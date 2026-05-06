@@ -1,4 +1,3 @@
-basePath: /
 definitions:
   internal_delivery_http.amountRequest:
     properties:
@@ -95,6 +94,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Topup wallet
       tags:
       - wallet
@@ -147,6 +148,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Transfer between wallets
       tags:
       - wallet
@@ -199,6 +202,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Withdraw from wallet
       tags:
       - wallet
@@ -239,6 +244,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Create wallet
       tags:
       - wallet
@@ -276,7 +283,14 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Get wallet balance
       tags:
       - wallet
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

@@ -17,13 +17,16 @@ func NewHandler(uc *usecase.WalletUsecase) Handler {
 	return Handler{uc: uc}
 }
 
-func (h Handler) RegisterRoutes(r *gin.Engine) {
+func (h Handler) RegisterRoutes(r *gin.Engine, secret string) {
 	r.GET("/healthz", h.healthz)
-	r.POST("/wallets", h.createWallet)
-	r.POST("/wallet/topups", h.topup)
-	r.POST("/wallet/withdrawals", h.withdraw)
-	r.POST("/wallet/transfers", h.transfer)
-	r.GET("/wallets/:userID/balance", h.balance)
+
+	protected := r.Group("/")
+	protected.Use(AuthMiddleware(secret))
+	protected.POST("/wallets", h.createWallet)
+	protected.POST("/wallet/topups", h.topup)
+	protected.POST("/wallet/withdrawals", h.withdraw)
+	protected.POST("/wallet/transfers", h.transfer)
+	protected.GET("/wallets/:userID/balance", h.balance)
 }
 
 type createWalletRequest struct {
@@ -37,6 +40,7 @@ type createWalletRequest struct {
 // @Accept json
 // @Produce json
 // @Param payload body createWalletRequest true "Create wallet payload"
+// @Security BearerAuth
 // @Success 201 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 409 {object} map[string]string
@@ -74,6 +78,7 @@ type amountRequest struct {
 // @Accept json
 // @Produce json
 // @Param payload body amountRequest true "Topup payload"
+// @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
@@ -100,6 +105,7 @@ func (h Handler) topup(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param payload body amountRequest true "Withdraw payload"
+// @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
@@ -133,6 +139,7 @@ type transferRequest struct {
 // @Accept json
 // @Produce json
 // @Param payload body transferRequest true "Transfer payload"
+// @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
@@ -162,6 +169,7 @@ func (h Handler) transfer(c *gin.Context) {
 // @Tags wallet
 // @Produce json
 // @Param userID path string true "User ID"
+// @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string

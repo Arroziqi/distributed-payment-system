@@ -93,19 +93,19 @@ func (u *WalletUsecase) Transfer(ctx context.Context, fromUserID string, toUserI
 	return fromWallet, toWallet, nil
 }
 
-func (u *WalletUsecase) BalanceInquiry(ctx context.Context, userID string) (int64, error) {
+func (u *WalletUsecase) BalanceInquiry(ctx context.Context, userID string) (domain.Wallet, error) {
 	if userID == "" {
-		return 0, ErrInvalidInput
+		return domain.Wallet{}, ErrInvalidInput
 	}
-	if val, ok, err := u.cacheRepo.Get(ctx, userID); err == nil && ok {
-		return val, nil
-	}
+
 	w, err := u.walletRepo.GetByUserID(ctx, userID)
 	if err != nil {
-		return 0, mapRepoErr(err)
+		return domain.Wallet{}, mapRepoErr(err)
 	}
+
 	_ = u.cacheRepo.Set(ctx, userID, w.AvailableBalance, u.cacheTTL)
-	return w.AvailableBalance, nil
+
+	return w, nil
 }
 
 func mapRepoErr(err error) error {
