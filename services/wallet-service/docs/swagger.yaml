@@ -1,0 +1,282 @@
+basePath: /
+definitions:
+  internal_delivery_http.amountRequest:
+    properties:
+      amount:
+        type: integer
+      user_id:
+        type: string
+    required:
+    - amount
+    - user_id
+    type: object
+  internal_delivery_http.createWalletRequest:
+    properties:
+      currency:
+        type: string
+      user_id:
+        type: string
+    required:
+    - user_id
+    type: object
+  internal_delivery_http.transferRequest:
+    properties:
+      amount:
+        type: integer
+      from_user_id:
+        type: string
+      to_user_id:
+        type: string
+    required:
+    - amount
+    - from_user_id
+    - to_user_id
+    type: object
+info:
+  contact: {}
+  description: Wallet service API documentation.
+  title: Wallet Service API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - system
+  /wallet/topups:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Topup payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_http.amountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Topup wallet
+      tags:
+      - wallet
+  /wallet/transfers:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Transfer payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_http.transferRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Transfer between wallets
+      tags:
+      - wallet
+  /wallet/withdrawals:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Withdraw payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_http.amountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Withdraw from wallet
+      tags:
+      - wallet
+  /wallets:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create wallet payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_http.createWalletRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create wallet
+      tags:
+      - wallet
+  /wallets/{userID}/balance:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get wallet balance
+      tags:
+      - wallet
+swagger: "2.0"

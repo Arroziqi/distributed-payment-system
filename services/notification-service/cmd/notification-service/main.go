@@ -2,22 +2,36 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"notification-service/internal/config"
 	"notification-service/internal/consumer"
+	delivery "notification-service/internal/delivery/http"
 	"notification-service/internal/observability"
 	"notification-service/internal/service"
 
+	_ "notification-service/docs"
+
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	amqp "github.com/rabbitmq/amqp091-go"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+//go:generate sh -c "cd ../.. && swag init -g cmd/notification-service/main.go -o docs --parseInternal --parseDependency"
+
+// @title Notification Service API
+// @version 1.0
+// @description Notification service API documentation.
+// @BasePath /
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -32,7 +46,7 @@ func main() {
 	}
 	defer dbPool.Close()
 
-	rabbitConn, err := amqp.Dial(cfg.RabbitMQURL)
+	rabbitConn, err := dialRabbitWithRetry(cfg.RabbitMQURL, 20, 2*time.Second)
 	if err != nil {
 		log.Fatalf("connect rabbitmq: %v", err)
 	}
@@ -50,17 +64,17 @@ func main() {
 		log.Fatalf("start consumer: %v", err)
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"service":"notification-service","status":"ok"}`))
-	})
-	mux.Handle("/metrics", promhttp.Handler())
+	router := gin.New()
+	router.Use(gin.Logger(), gin.Recovery(), observability.GinMiddleware(cfg.ServiceName))
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	observability.SetServiceUp(cfg.ServiceName)
+	h := delivery.NewHandler()
+	h.RegisterRoutes(router)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.HTTPPort,
-		Handler: observability.Middleware(cfg.ServiceName, mux),
+		Handler: router,
 	}
 	go func() {
 		log.Printf("%s listening on :%s", cfg.ServiceName, cfg.HTTPPort)
@@ -79,4 +93,18 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("graceful shutdown failed: %v", err)
 	}
+}
+
+func dialRabbitWithRetry(url string, maxAttempts int, delay time.Duration) (*amqp.Connection, error) {
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		conn, err := amqp.Dial(url)
+		if err == nil {
+			return conn, nil
+		}
+		lastErr = err
+		log.Printf("rabbitmq dial attempt %d/%d failed: %v", attempt, maxAttempts, err)
+		time.Sleep(delay)
+	}
+	return nil, fmt.Errorf("rabbitmq dial failed after %d attempts: %w", maxAttempts, lastErr)
 }

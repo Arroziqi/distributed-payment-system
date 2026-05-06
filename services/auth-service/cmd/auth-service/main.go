@@ -16,12 +16,22 @@ import (
 	"auth-service/internal/infrastructure/security"
 	"auth-service/internal/usecase"
 
+	_ "auth-service/docs"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	goredis "github.com/redis/go-redis/v9"
 )
 
+//go:generate sh -c "cd ../.. && swag init -g cmd/auth-service/main.go -o docs --parseInternal --parseDependency"
+
+// @title Auth Service API
+// @version 1.0
+// @description Authentication service API documentation.
+// @BasePath /
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -63,6 +73,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery(), observability.GinMiddleware(cfg.ServiceName))
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	observability.SetServiceUp(cfg.ServiceName)
 	handler := delivery.NewAuthHandler(authUC)
 	handler.RegisterRoutes(router)

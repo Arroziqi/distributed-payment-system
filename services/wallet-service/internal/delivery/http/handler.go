@@ -31,6 +31,17 @@ type createWalletRequest struct {
 	Currency string `json:"currency"`
 }
 
+// createWallet godoc
+// @Summary Create wallet
+// @Tags wallet
+// @Accept json
+// @Produce json
+// @Param payload body createWalletRequest true "Create wallet payload"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /wallets [post]
 func (h Handler) createWallet(c *gin.Context) {
 	var req createWalletRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -57,6 +68,18 @@ type amountRequest struct {
 	Amount int64  `json:"amount" binding:"required,gt=0"`
 }
 
+// topup godoc
+// @Summary Topup wallet
+// @Tags wallet
+// @Accept json
+// @Produce json
+// @Param payload body amountRequest true "Topup payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /wallet/topups [post]
 func (h Handler) topup(c *gin.Context) {
 	var req amountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -71,6 +94,19 @@ func (h Handler) topup(c *gin.Context) {
 	c.JSON(http.StatusOK, w)
 }
 
+// withdraw godoc
+// @Summary Withdraw from wallet
+// @Tags wallet
+// @Accept json
+// @Produce json
+// @Param payload body amountRequest true "Withdraw payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 422 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /wallet/withdrawals [post]
 func (h Handler) withdraw(c *gin.Context) {
 	var req amountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -91,6 +127,19 @@ type transferRequest struct {
 	Amount     int64  `json:"amount" binding:"required,gt=0"`
 }
 
+// transfer godoc
+// @Summary Transfer between wallets
+// @Tags wallet
+// @Accept json
+// @Produce json
+// @Param payload body transferRequest true "Transfer payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 422 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /wallet/transfers [post]
 func (h Handler) transfer(c *gin.Context) {
 	var req transferRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -108,6 +157,16 @@ func (h Handler) transfer(c *gin.Context) {
 	})
 }
 
+// balance godoc
+// @Summary Get wallet balance
+// @Tags wallet
+// @Produce json
+// @Param userID path string true "User ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /wallets/{userID}/balance [get]
 func (h Handler) balance(c *gin.Context) {
 	userID := c.Param("userID")
 	balance, err := h.uc.BalanceInquiry(c.Request.Context(), userID)
@@ -137,6 +196,12 @@ func (h Handler) handleUsecaseError(c *gin.Context, err error) {
 	}
 }
 
+// healthz godoc
+// @Summary Health check
+// @Tags system
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /healthz [get]
 func (h Handler) healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"service": "wallet-service", "status": "ok"})
 }

@@ -32,6 +32,17 @@ type registerRequest struct {
 	Password string `json:"password" binding:"required,min=8"`
 }
 
+// register godoc
+// @Summary Register user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param payload body registerRequest true "Register payload"
+// @Success 201 {object} usecase.RegisterOutput
+// @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/register [post]
 func (h AuthHandler) register(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -62,6 +73,18 @@ type loginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// login godoc
+// @Summary Login user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param payload body loginRequest true "Login payload"
+// @Success 200 {object} usecase.AuthTokens
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/login [post]
 func (h AuthHandler) login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -94,6 +117,18 @@ type refreshRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+// refresh godoc
+// @Summary Refresh access token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param payload body refreshRequest true "Refresh payload"
+// @Success 200 {object} usecase.AuthTokens
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/refresh [post]
 func (h AuthHandler) refresh(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -125,6 +160,16 @@ type logoutRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+// logout godoc
+// @Summary Logout user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param payload body logoutRequest true "Logout payload"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/logout [post]
 func (h AuthHandler) logout(c *gin.Context) {
 	var req logoutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -146,6 +191,12 @@ func (h AuthHandler) logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "logout successful"})
 }
 
+// healthz godoc
+// @Summary Health check
+// @Tags system
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /healthz [get]
 func (h AuthHandler) healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"service": "auth-service",

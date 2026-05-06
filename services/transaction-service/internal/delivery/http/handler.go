@@ -33,6 +33,18 @@ type processPaymentRequest struct {
 	Amount       int64  `json:"amount" binding:"required,gt=0"`
 }
 
+// processPayment godoc
+// @Summary Process payment transaction
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Param Idempotency-Key header string true "Idempotency key"
+// @Param payload body processPaymentRequest true "Payment payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /transactions/payments [post]
 func (h Handler) processPayment(c *gin.Context) {
 	var req processPaymentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -67,6 +79,15 @@ func (h Handler) processPayment(c *gin.Context) {
 	})
 }
 
+// list godoc
+// @Summary List transaction history
+// @Tags transactions
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /transactions [get]
 func (h Handler) list(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
@@ -78,6 +99,16 @@ func (h Handler) list(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"transactions": rows, "limit": limit, "offset": offset})
 }
 
+// detail godoc
+// @Summary Get transaction detail
+// @Tags transactions
+// @Produce json
+// @Param id path string true "Transaction ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /transactions/{id} [get]
 func (h Handler) detail(c *gin.Context) {
 	tx, err := h.uc.GetByID(c.Request.Context(), c.Param("id"))
 	if err != nil {
@@ -95,6 +126,12 @@ func (h Handler) detail(c *gin.Context) {
 	c.JSON(http.StatusOK, tx)
 }
 
+// healthz godoc
+// @Summary Health check
+// @Tags system
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /healthz [get]
 func (h Handler) healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"service": "transaction-service", "status": "ok"})
 }

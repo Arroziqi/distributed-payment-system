@@ -15,12 +15,22 @@ import (
 	"wallet-service/internal/observability"
 	"wallet-service/internal/usecase"
 
+	_ "wallet-service/docs"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	goredis "github.com/redis/go-redis/v9"
 )
 
+//go:generate sh -c "cd ../.. && swag init -g cmd/wallet-service/main.go -o docs --parseInternal --parseDependency"
+
+// @title Wallet Service API
+// @version 1.0
+// @description Wallet service API documentation.
+// @BasePath /
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -52,6 +62,7 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery(), observability.GinMiddleware(cfg.ServiceName))
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	observability.SetServiceUp(cfg.ServiceName)
 	h := delivery.NewHandler(walletUC)
 	h.RegisterRoutes(r)

@@ -1,0 +1,151 @@
+basePath: /
+definitions:
+  internal_delivery_http.processPaymentRequest:
+    properties:
+      amount:
+        type: integer
+      external_id:
+        type: string
+      from_wallet_id:
+        type: string
+      to_wallet_id:
+        type: string
+      type:
+        type: string
+    required:
+    - amount
+    - from_wallet_id
+    - to_wallet_id
+    - type
+    type: object
+info:
+  contact: {}
+  description: Transaction service API documentation.
+  title: Transaction Service API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - system
+  /transactions:
+    get:
+      parameters:
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List transaction history
+      tags:
+      - transactions
+  /transactions/{id}:
+    get:
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get transaction detail
+      tags:
+      - transactions
+  /transactions/payments:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Idempotency key
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: Payment payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_http.processPaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Process payment transaction
+      tags:
+      - transactions
+swagger: "2.0"

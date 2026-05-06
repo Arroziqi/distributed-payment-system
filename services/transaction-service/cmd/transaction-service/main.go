@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"transaction-service/internal/config"
 	delivery "transaction-service/internal/delivery/http"
@@ -15,12 +17,22 @@ import (
 	rmq "transaction-service/internal/infrastructure/rabbitmq"
 	"transaction-service/internal/usecase"
 
+	_ "transaction-service/docs"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	amqp "github.com/rabbitmq/amqp091-go"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+//go:generate sh -c "cd ../.. && swag init -g cmd/transaction-service/main.go -o docs --parseInternal --parseDependency"
+
+// @title Transaction Service API
+// @version 1.0
+// @description Transaction service API documentation.
+// @BasePath /
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -34,7 +46,7 @@ func main() {
 	}
 	defer dbPool.Close()
 
-	rabbitConn, err := amqp.Dial(cfg.RabbitMQURL)
+	rabbitConn, err := dialRabbitWithRetry(cfg.RabbitMQURL, 20, 2*time.Second)
 	if err != nil {
 		log.Fatalf("connect rabbitmq: %v", err)
 	}
@@ -56,6 +68,7 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery(), observability.GinMiddleware(cfg.ServiceName))
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	observability.SetServiceUp(cfg.ServiceName)
 	h := delivery.NewHandler(txUC)
 	h.RegisterRoutes(r)
@@ -81,4 +94,18 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("graceful shutdown failed: %v", err)
 	}
+}
+
+func dialRabbitWithRetry(url string, maxAttempts int, delay time.Duration) (*amqp.Connection, error) {
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		conn, err := amqp.Dial(url)
+		if err == nil {
+			return conn, nil
+		}
+		lastErr = err
+		log.Printf("rabbitmq dial attempt %d/%d failed: %v", attempt, maxAttempts, err)
+		time.Sleep(delay)
+	}
+	return nil, fmt.Errorf("rabbitmq dial failed after %d attempts: %w", maxAttempts, lastErr)
 }

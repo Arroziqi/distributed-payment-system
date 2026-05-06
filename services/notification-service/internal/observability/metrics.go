@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -31,6 +32,26 @@ var (
 
 func SetServiceUp(service string) {
 	serviceUp.WithLabelValues(service).Set(1)
+}
+
+func GinMiddleware(service string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+
+		route := c.FullPath()
+		if route == "" {
+			route = "unmatched"
+		}
+		status := strconv.Itoa(c.Writer.Status())
+		latency := time.Since(start).Seconds()
+
+		requestsTotal.WithLabelValues(service, c.Request.Method, route, status).Inc()
+		requestLatency.WithLabelValues(service, c.Request.Method, route).Observe(latency)
+		if c.Writer.Status() >= 500 {
+			requestsFailed.WithLabelValues(service, c.Request.Method, route).Inc()
+		}
+	}
 }
 
 func Middleware(service string, next http.Handler) http.Handler {
