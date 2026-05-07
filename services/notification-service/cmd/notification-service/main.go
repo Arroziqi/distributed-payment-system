@@ -16,6 +16,8 @@ import (
 	"notification-service/internal/observability"
 	"notification-service/internal/service"
 
+	sharedMiddleware "distributed-payment-system/shared/middleware"
+
 	_ "notification-service/docs"
 
 	"github.com/gin-gonic/gin"
@@ -80,6 +82,7 @@ func main() {
 	}
 
 	router := gin.New()
+	router.Use(sharedMiddleware.CORS())
 	router.Use(observability.LoggingMiddleware(cfg.ServiceName), observability.GinMiddleware(cfg.ServiceName))
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
