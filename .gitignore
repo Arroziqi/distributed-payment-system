@@ -1,0 +1,42 @@
+# Binaries
+bin/
+build/
+*.exe
+*.out
+*.app
+
+# Service compiled binaries
+services/auth-service/auth-service
+services/wallet-service/wallet-service
+services/transaction-service/transaction-service
+services/notification-service/notification-service
+auth-service
+wallet-service
+transaction-service
+notification-service
+
+# Go
+vendor/
+go.work
+go.work.sum
+coverage.txt
+coverage.out
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Docker / Data volumes
+postgres-data/
+loki_data/
+prometheus/data/
+data/
