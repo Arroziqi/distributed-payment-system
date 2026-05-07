@@ -22,6 +22,17 @@ go.work.sum
 coverage.txt
 coverage.out
 
+# Node
+node_modules/
+yarn.lock
+npm-debug.log*
+.pnp
+.pnp.js
+dist/
+.output/
+.nitro
+
+
 # IDEs
 .idea/
 .vscode/

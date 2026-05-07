@@ -1,7 +1,40 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "8000:8000"
+    environment:
+      - VITE_AUTH_API_URL=http://localhost:8081
+      - VITE_WALLET_API_URL=http://localhost:8082
+      - VITE_TRANSACTION_API_URL=http://localhost:8083
+      - VITE_NOTIFICATION_API_URL=http://localhost:8084
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - auth-service
+      - wallet-service
+      - transaction-service
+      - notification-service
+
+  storybook:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.storybook
+    container_name: storybook
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
   auth-service:
     build:
-      context: ./services/auth-service
+      context: .
+      dockerfile: services/auth-service/Dockerfile
     container_name: auth-service
     environment:
       SERVICE_NAME: auth-service
@@ -23,7 +56,8 @@ services:
 
   wallet-service:
     build:
-      context: ./services/wallet-service
+      context: .
+      dockerfile: services/wallet-service/Dockerfile
     container_name: wallet-service
     environment:
       SERVICE_NAME: wallet-service
@@ -44,7 +78,8 @@ services:
 
   transaction-service:
     build:
-      context: ./services/transaction-service
+      context: .
+      dockerfile: services/transaction-service/Dockerfile
     container_name: transaction-service
     environment:
       SERVICE_NAME: transaction-service
@@ -65,7 +100,8 @@ services:
 
   notification-service:
     build:
-      context: ./services/notification-service
+      context: .
+      dockerfile: services/notification-service/Dockerfile
     container_name: notification-service
     environment:
       SERVICE_NAME: notification-service

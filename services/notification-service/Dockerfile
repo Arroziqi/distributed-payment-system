@@ -1,8 +1,10 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:alpine AS builder
 WORKDIR /app
-COPY go.mod go.sum ./
+COPY internal/shared internal/shared
+COPY services/notification-service/go.mod services/notification-service/go.sum services/notification-service/
+WORKDIR /app/services/notification-service
 RUN go mod download
-COPY . .
+COPY services/notification-service .
 RUN go install github.com/swaggo/swag/cmd/swag@v1.8.12
 RUN go generate ./...
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/notification-service ./cmd/notification-service

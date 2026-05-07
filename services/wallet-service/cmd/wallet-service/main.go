@@ -16,6 +16,8 @@ import (
 	"wallet-service/internal/observability"
 	"wallet-service/internal/usecase"
 
+	sharedMiddleware "distributed-payment-system/shared/middleware"
+
 	_ "wallet-service/docs"
 
 	"github.com/gin-gonic/gin"
@@ -74,6 +76,7 @@ func main() {
 	}
 
 	r := gin.New()
+	r.Use(sharedMiddleware.CORS())
 	r.Use(observability.LoggingMiddleware(cfg.ServiceName), observability.GinMiddleware(cfg.ServiceName))
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

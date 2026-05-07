@@ -13,6 +13,8 @@ The system consists of four independent microservices that communicate synchrono
 
 ### Tech Stack
 - **Language**: Go (Golang)
+- **Frontend**: Vue 3 + Quasar (TypeScript, Pinia, Atomic Design)
+- **Component Docs**: Storybook
 - **Databases**: PostgreSQL (per service), Redis (caching and idempotency)
 - **Message Broker**: RabbitMQ
 - **Observability**: Prometheus (Metrics), Grafana (Dashboards)
@@ -44,8 +46,10 @@ docker compose down -v
 
 Once the system is running via `docker compose`, the services are bound to the following local ports:
 
-| Service | Port | Base URL | Swagger UI URL |
+| Service | Port | Base URL | Swagger UI URL / Notes |
 |---------|------|----------|----------------|
+| **Frontend UI** | `8000` | `http://localhost:8000` | Quasar Atomic Design App |
+| **Storybook** | `6006` | `http://localhost:6006` | Component Documentation |
 | **Auth** | `8081` | `http://localhost:8081` | [http://localhost:8081/swagger/index.html](http://localhost:8081/swagger/index.html) |
 | **Wallet** | `8082` | `http://localhost:8082` | [http://localhost:8082/swagger/index.html](http://localhost:8082/swagger/index.html) |
 | **Transaction** | `8083` | `http://localhost:8083` | [http://localhost:8083/swagger/index.html](http://localhost:8083/swagger/index.html) |
