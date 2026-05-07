@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,10 +11,10 @@ import (
 
 	"auth-service/internal/config"
 	delivery "auth-service/internal/delivery/http"
-	"auth-service/internal/observability"
 	pgrepo "auth-service/internal/infrastructure/postgres"
 	redisrepo "auth-service/internal/infrastructure/redis"
 	"auth-service/internal/infrastructure/security"
+	"auth-service/internal/observability"
 	"auth-service/internal/usecase"
 
 	_ "auth-service/docs"
@@ -21,9 +22,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	goredis "github.com/redis/go-redis/v9"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 //go:generate sh -c "cd ../.. && swag init -g cmd/auth-service/main.go -o docs --parseInternal --parseDependency"
@@ -36,15 +37,20 @@ import (
 // @name Authorization
 // @BasePath /
 func main() {
+	slogHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+	slog.SetDefault(slog.New(slogHandler))
+
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("load config: %v", err)
+		slog.Error("load config failed", "error", err)
+		os.Exit(1)
 	}
 
 	ctx := context.Background()
 	dbPool, err := pgxpool.New(ctx, cfg.PostgresDSN)
 	if err != nil {
-		log.Fatalf("connect postgres: %v", err)
+		slog.Error("connect postgres failed", "error", err)
+		os.Exit(1)
 	}
 	defer dbPool.Close()
 
@@ -56,7 +62,8 @@ func main() {
 	defer redisClient.Close()
 
 	if err := redisClient.Ping(ctx).Err(); err != nil {
-		log.Fatalf("ping redis: %v", err)
+		slog.Error("ping redis failed", "error", err)
+		os.Exit(1)
 	}
 
 	userRepo := pgrepo.NewUserRepository(dbPool)
@@ -73,8 +80,12 @@ func main() {
 		cfg.RefreshTokenTTL,
 	)
 
+	if os.Getenv("ENV") != "development" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	router := gin.New()
-	router.Use(gin.Logger(), gin.Recovery(), observability.GinMiddleware(cfg.ServiceName))
+	router.Use(observability.LoggingMiddleware(cfg.ServiceName), observability.GinMiddleware(cfg.ServiceName))
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	observability.SetServiceUp(cfg.ServiceName)
@@ -87,9 +98,14 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("%s listening on :%s", cfg.ServiceName, cfg.HTTPPort)
+		fmt.Printf("\n=================================\n")
+		fmt.Printf("%s started\n", cfg.ServiceName)
+		fmt.Printf("HTTP Port: %s\n", cfg.HTTPPort)
+		fmt.Printf("Environment: %s\n", os.Getenv("ENV"))
+		fmt.Printf("=================================\n\n")
+		
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen and serve: %v", err)
+			slog.Error("listen and serve failed", "error", err)
 		}
 	}()
 
@@ -101,6 +117,8 @@ func main() {
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("graceful shutdown failed: %v", err)
+		slog.Error("graceful shutdown failed", "error", err)
+	} else {
+		slog.Info("server gracefully stopped")
 	}
 }

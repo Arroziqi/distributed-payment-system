@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,9 +12,9 @@ import (
 
 	"transaction-service/internal/config"
 	delivery "transaction-service/internal/delivery/http"
-	"transaction-service/internal/observability"
 	pgrepo "transaction-service/internal/infrastructure/postgres"
 	rmq "transaction-service/internal/infrastructure/rabbitmq"
+	"transaction-service/internal/observability"
 	"transaction-service/internal/usecase"
 
 	_ "transaction-service/docs"
@@ -37,39 +37,51 @@ import (
 // @name Authorization
 // @BasePath /
 func main() {
+	slogHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+	slog.SetDefault(slog.New(slogHandler))
+
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("load config: %v", err)
+		slog.Error("load config failed", "error", err)
+		os.Exit(1)
 	}
 	ctx := context.Background()
 
 	dbPool, err := pgxpool.New(ctx, cfg.PostgresDSN)
 	if err != nil {
-		log.Fatalf("connect postgres: %v", err)
+		slog.Error("connect postgres failed", "error", err)
+		os.Exit(1)
 	}
 	defer dbPool.Close()
 
-	rabbitConn, err := dialRabbitWithRetry(cfg.RabbitMQURL, 20, 2*time.Second)
+	rabbitConn, err := dialRabbitWithRetry(cfg.RabbitMQURL, 10, 2*time.Second)
 	if err != nil {
-		log.Fatalf("connect rabbitmq: %v", err)
+		slog.Error("connect rabbitmq failed", "error", err)
+		os.Exit(1)
 	}
 	defer rabbitConn.Close()
 	rabbitCh, err := rabbitConn.Channel()
 	if err != nil {
-		log.Fatalf("create rabbitmq channel: %v", err)
+		slog.Error("create rabbitmq channel failed", "error", err)
+		os.Exit(1)
 	}
 	defer rabbitCh.Close()
 
 	if err := rabbitCh.ExchangeDeclare(cfg.RabbitExchange, "topic", true, false, false, false, nil); err != nil {
-		log.Fatalf("declare exchange: %v", err)
+		slog.Error("declare exchange failed", "error", err)
+		os.Exit(1)
 	}
 
 	txRepo := pgrepo.NewTransactionRepository(dbPool)
 	pub := rmq.NewPublisher(rabbitCh, cfg.RabbitExchange)
 	txUC := usecase.NewTransactionUsecase(txRepo, pub, cfg.IdempotencyTTL)
 
+	if os.Getenv("ENV") != "development" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery(), observability.GinMiddleware(cfg.ServiceName))
+	r.Use(observability.LoggingMiddleware(cfg.ServiceName), observability.GinMiddleware(cfg.ServiceName))
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	observability.SetServiceUp(cfg.ServiceName)
@@ -82,9 +94,15 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("%s listening on :%s", cfg.ServiceName, cfg.HTTPPort)
+		fmt.Printf("\n=================================\n")
+		fmt.Printf("%s started\n", cfg.ServiceName)
+		fmt.Printf("HTTP Port: %s\n", cfg.HTTPPort)
+		fmt.Printf("RabbitMQ: connected\n")
+		fmt.Printf("Environment: %s\n", os.Getenv("ENV"))
+		fmt.Printf("=================================\n\n")
+
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen and serve: %v", err)
+			slog.Error("listen and serve failed", "error", err)
 		}
 	}()
 
@@ -95,20 +113,25 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("graceful shutdown failed: %v", err)
+		slog.Error("graceful shutdown failed", "error", err)
+	} else {
+		slog.Info("server gracefully stopped")
 	}
 }
 
 func dialRabbitWithRetry(url string, maxAttempts int, delay time.Duration) (*amqp.Connection, error) {
 	var lastErr error
+	slog.Info("connecting to rabbitmq...")
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		conn, err := amqp.Dial(url)
 		if err == nil {
+			slog.Info("rabbitmq connected successfully")
 			return conn, nil
 		}
 		lastErr = err
-		log.Printf("rabbitmq dial attempt %d/%d failed: %v", attempt, maxAttempts, err)
+		slog.Warn(fmt.Sprintf("rabbitmq not ready, retrying in %v...", delay), "attempt", attempt, "maxAttempts", maxAttempts, "error", err)
 		time.Sleep(delay)
+		delay = time.Duration(float64(delay) * 1.5)
 	}
 	return nil, fmt.Errorf("rabbitmq dial failed after %d attempts: %w", maxAttempts, lastErr)
 }

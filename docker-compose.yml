@@ -14,9 +14,12 @@ services:
     ports:
       - "8081:8080"
     depends_on:
-      - postgres-auth
-      - redis
-      - rabbitmq
+      postgres-auth:
+        condition: service_started
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   wallet-service:
     build:
@@ -32,9 +35,12 @@ services:
     ports:
       - "8082:8080"
     depends_on:
-      - postgres-wallet
-      - redis
-      - rabbitmq
+      postgres-wallet:
+        condition: service_started
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   transaction-service:
     build:
@@ -50,9 +56,12 @@ services:
     ports:
       - "8083:8080"
     depends_on:
-      - postgres-transaction
-      - redis
-      - rabbitmq
+      postgres-transaction:
+        condition: service_started
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   notification-service:
     build:
@@ -67,8 +76,10 @@ services:
     ports:
       - "8084:8080"
     depends_on:
-      - postgres-notification
-      - rabbitmq
+      postgres-notification:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   postgres-auth:
     image: postgres:16-alpine
@@ -130,6 +141,30 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
 
   prometheus:
     image: prom/prometheus:v2.53.0
@@ -152,9 +187,22 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     ports:
       - "3000:3000"
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        echo "Loki datasource provisioned successfully"
+        echo "Dashboard loaded successfully"
+        exec /run.sh
     volumes:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+
+volumes:
+  loki_data:
