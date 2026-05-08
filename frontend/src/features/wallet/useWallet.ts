@@ -1,5 +1,5 @@
 import { computed } from 'vue';
-import { useGetWalletsUserIDBalance, usePostWalletTopups, usePostWalletTransfers } from '@/api/generated/wallet/wallet';
+import { useGetWalletsUserIDBalance, usePostWalletTopups, usePostWalletTransfers, usePostWallets } from '@/api/generated/wallet/wallet';
 import { toast } from 'vue-sonner';
 
 export const useWallet = () => {
@@ -13,12 +13,26 @@ export const useWallet = () => {
   });
 
   const topupMutation = usePostWalletTopups();
+  const createWalletMutation = usePostWallets();
   const transferMutation = usePostWalletTransfers();
 
-  const balance = computed(() => {
+  const wallet = computed(() => {
     const data = balanceQuery.data.value as any;
-    return data?.balance || 0;
+    return data?.balance;
   });
+
+  const balance = computed(() => {
+    return wallet.value?.available_balance || 0;
+  });
+
+  const lockedBalance = computed(() => {
+    return wallet.value?.locked_balance || 0;
+  });
+
+  const currency = computed(() => {
+    return wallet.value?.currency || 'USD';
+  });
+
 
   const topup = async (amount: number) => {
     try {
@@ -51,12 +65,33 @@ export const useWallet = () => {
     }
   };
 
+  const createWallet = async (currency?: string) => {
+    try {
+      await createWalletMutation.mutateAsync({
+        data: { user_id: userId, currency }
+      });
+      toast.success('Wallet created successfully');
+      balanceQuery.refetch();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Create wallet failed');
+      throw error;
+    }
+  }
+
   return {
+    wallet,
     balance,
+    lockedBalance,
+    currency,
     loading: balanceQuery.isLoading,
+    isError: balanceQuery.isError,
+    error: balanceQuery.error,
     topup,
     transfer,
+    createWallet,
     isTopupLoading: topupMutation.isPending,
     isTransferLoading: transferMutation.isPending,
+    isCreateWalletLoading: createWalletMutation.isPending,
+    refetch: balanceQuery.refetch,
   };
 };

@@ -1,25 +1,68 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import DashboardOverview from '@/components/organisms/DashboardOverview.vue';
 import TransactionTable from '@/components/organisms/TransactionTable.vue';
 import BaseButton from '@/components/atoms/BaseButton.vue';
 import BaseIcon from '@/components/atoms/BaseIcon.vue';
+import { useWallet } from '@/features/wallet/useWallet';
+import { useTransactions } from '@/features/transactions/useTransactions';
 
-const balance = ref(12500);
-const currency = ref('USD');
-const stats = ref({
-  totalIncome: 15000,
-  totalExpense: 2500,
-  activeTransactions: 3
+const router = useRouter();
+const { balance, lockedBalance, wallet, loading: walletLoading } = useWallet();
+const { transactions: allTransactions, loading: transactionsLoading } = useTransactions();
+
+const currency = computed(() => wallet.value?.currency || 'USD');
+
+
+const stats = computed(() => {
+  const userWalletId = wallet.value?.id;
+
+  if (!userWalletId) return { totalIncome: 0, totalExpense: 0, activeTransactions: 0 };
+
+  let totalIncome = 0;
+  let totalExpense = 0;
+
+  allTransactions.value.forEach((tx: any) => {
+    if (tx.Status === 'completed') {
+      if (tx.ToWalletID === userWalletId) {
+        totalIncome += tx.Amount;
+      }
+      if (tx.FromWalletID === userWalletId) {
+        totalExpense += tx.Amount;
+      }
+    }
+  });
+
+  return {
+    totalIncome,
+    totalExpense,
+    activeTransactions: lockedBalance.value,
+  };
 });
 
-const transactions = ref([
-  { id: '1', type: 'incoming', amount: 500, currency: 'USD', recipient: 'John Doe', createdAt: '2026-05-07 10:00', status: 'completed' },
-  { id: '2', type: 'outgoing', amount: -150, currency: 'USD', recipient: 'Amazon', createdAt: '2026-05-07 09:30', status: 'completed' },
-  { id: '3', type: 'outgoing', amount: -200, currency: 'USD', recipient: 'Starbucks', createdAt: '2026-05-07 08:45', status: 'pending' },
-]);
+const formattedTransactions = computed(() => {
+  const userWalletId = wallet.value?.ID;
+  if (!userWalletId) return [];
 
-const loading = ref(false);
+  return allTransactions.value
+    .filter((tx: any) => tx.FromWalletID === userWalletId || tx.ToWalletID === userWalletId)
+    .map((tx: any) => {
+      const isIncome = tx.ToWalletID === userWalletId;
+      return {
+        id: tx.ID,
+        type: tx.Type,
+        amount: isIncome ? tx.Amount : -tx.Amount,
+        currency: currency.value,
+        recipient: isIncome ? (tx.FromWalletID || 'System') : (tx.ToWalletID || 'System'),
+        createdAt: new Date(tx.CreatedAt).toLocaleString(),
+        status: tx.Status,
+      };
+    })
+    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+});
+
+const loading = computed(() => walletLoading.value || transactionsLoading.value);
 </script>
 
 <template>
@@ -45,7 +88,7 @@ const loading = ref(false);
       <div class="col-span-4 rounded-xl border bg-card text-card-foreground shadow">
         <div class="p-6">
           <h3 class="text-lg font-semibold mb-4">Recent Transactions</h3>
-          <TransactionTable :transactions="transactions" :loading="loading" />
+          <TransactionTable :transactions="formattedTransactions" :loading="loading" />
         </div>
       </div>
       
@@ -53,11 +96,15 @@ const loading = ref(false);
         <div class="p-6">
           <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
           <div class="grid grid-cols-2 gap-4">
-            <BaseButton variant="outline" class="h-24 flex-col gap-2">
+            <BaseButton 
+              variant="outline" 
+              class="h-24 flex-col gap-2"
+              @click="router.push('/wallet/transfer')"
+            >
               <BaseIcon name="Send" class="h-6 w-6" />
               Transfer
             </BaseButton>
-            <BaseButton variant="outline" class="h-24 flex-col gap-2">
+            <BaseButton variant="outline" class="h-24 flex-col gap-2" @click="router.push('/wallet/topup')">
               <BaseIcon name="PlusCircle" class="h-6 w-6" />
               Top Up
             </BaseButton>

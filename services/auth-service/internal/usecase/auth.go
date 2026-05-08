@@ -49,12 +49,14 @@ func NewAuthUsecase(
 }
 
 type RegisterInput struct {
+	Name     string
 	Email    string
 	Password string
 }
 
 type RegisterOutput struct {
 	UserID    string    `json:"user_id"`
+	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -81,6 +83,7 @@ func (u *AuthUsecase) Register(ctx context.Context, in RegisterInput) (RegisterO
 	now := time.Now().UTC()
 	user := domain.User{
 		ID:           uuid.NewString(),
+		Name:         in.Name,
 		Email:        email,
 		PasswordHash: passwordHash,
 		Status:       "active",
@@ -97,6 +100,7 @@ func (u *AuthUsecase) Register(ctx context.Context, in RegisterInput) (RegisterO
 
 	return RegisterOutput{
 		UserID:    user.ID,
+		Name:      user.Name,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
 	}, nil
@@ -205,5 +209,57 @@ func (u *AuthUsecase) issueTokens(ctx context.Context, userID string, email stri
 		TokenType:    "Bearer",
 		ExpiresIn:    int64(u.accessTTL.Seconds()),
 		UserId:       userID,
+	}, nil
+}
+
+func (u *AuthUsecase) GetMe(ctx context.Context, userID string) (UserView, error) {
+	user, err := u.users.GetByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return UserView{}, fmt.Errorf("user not found")
+		}
+		return UserView{}, err
+	}
+
+	return UserView{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}, nil
+}
+
+type UpdateMeInput struct {
+	Name  *string
+	Email *string
+}
+
+func (u *AuthUsecase) UpdateMe(ctx context.Context, userID string, in UpdateMeInput) (UserView, error) {
+	user, err := u.users.GetByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return UserView{}, fmt.Errorf("user not found")
+		}
+		return UserView{}, err
+	}
+
+	if in.Name != nil {
+		user.Name = *in.Name
+	}
+	if in.Email != nil {
+		user.Email = strings.TrimSpace(strings.ToLower(*in.Email))
+	}
+	user.UpdatedAt = time.Now().UTC()
+
+	if err := u.users.Update(ctx, user); err != nil {
+		if errors.Is(err, repository.ErrAlreadyExists) {
+			return UserView{}, ErrEmailAlreadyExists
+		}
+		return UserView{}, err
+	}
+
+	return UserView{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
 	}, nil
 }

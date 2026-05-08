@@ -15,7 +15,8 @@ import (
 	redisrepo "wallet-service/internal/infrastructure/redis"
 	"wallet-service/internal/observability"
 	"wallet-service/internal/usecase"
-
+	"wallet-service/migrations"
+	"distributed-payment-system/shared/database"
 	sharedMiddleware "distributed-payment-system/shared/middleware"
 
 	_ "wallet-service/docs"
@@ -54,6 +55,12 @@ func main() {
 		os.Exit(1)
 	}
 	defer dbPool.Close()
+
+	// Run migrations
+	if err := database.RunMigrations(cfg.PostgresDSN, migrations.FS, "."); err != nil {
+		slog.Error("run migrations failed", "error", err)
+		os.Exit(1)
+	}
 
 	redisClient := goredis.NewClient(&goredis.Options{
 		Addr:     cfg.RedisAddr,

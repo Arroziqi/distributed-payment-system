@@ -16,7 +16,9 @@ import (
 	"auth-service/internal/infrastructure/security"
 	"auth-service/internal/observability"
 	"auth-service/internal/usecase"
+	"auth-service/migrations"
 
+	"distributed-payment-system/shared/database"
 	sharedMiddleware "distributed-payment-system/shared/middleware"
 
 	_ "auth-service/docs"
@@ -55,6 +57,12 @@ func main() {
 		os.Exit(1)
 	}
 	defer dbPool.Close()
+
+	// Run migrations
+	if err := database.RunMigrations(cfg.PostgresDSN, migrations.FS, "."); err != nil {
+		slog.Error("run migrations failed", "error", err)
+		os.Exit(1)
+	}
 
 	redisClient := goredis.NewClient(&goredis.Options{
 		Addr:     cfg.RedisAddr,

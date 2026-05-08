@@ -31,6 +31,26 @@ AXIOS_INSTANCE.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+AXIOS_INSTANCE.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const isAuthRequest = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
+    
+    if (error.response?.status === 401 && !isAuthRequest) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('user_id');
+      
+      // Only redirect if not already on login page to avoid instant reloads
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const customInstance = <T>(config: AxiosRequestConfig): Promise<T> => {
   return AXIOS_INSTANCE(config).then((res: AxiosResponse<T>) => res.data);
 };

@@ -4,10 +4,12 @@ import (
 	"errors"
 	"net/http"
 
+	"wallet-service/internal/domain"
 	"wallet-service/internal/usecase"
 
 	"github.com/gin-gonic/gin"
 )
+
 
 type Handler struct {
 	uc *usecase.WalletUsecase
@@ -28,6 +30,11 @@ func (h Handler) RegisterRoutes(r *gin.Engine, secret string) {
 	protected.POST("/wallet/transfers", h.transfer)
 	protected.GET("/wallets/:userID/balance", h.balance)
 }
+
+type balanceResponse struct {
+	Balance domain.Wallet `json:"balance"`
+}
+
 
 type createWalletRequest struct {
 	UserID   string `json:"user_id" binding:"required"`
@@ -170,7 +177,7 @@ func (h Handler) transfer(c *gin.Context) {
 // @Produce json
 // @Param userID path string true "User ID"
 // @Security BearerAuth
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} balanceResponse
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -182,12 +189,11 @@ func (h Handler) balance(c *gin.Context) {
 		h.handleUsecaseError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"user_id":  userID,
-		"balance":  balance,
-		"currency": "USD",
+	c.JSON(http.StatusOK, balanceResponse{
+		Balance: balance,
 	})
 }
+
 
 func (h Handler) handleUsecaseError(c *gin.Context, err error) {
 	switch {

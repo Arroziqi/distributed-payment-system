@@ -15,7 +15,9 @@ import (
 	delivery "notification-service/internal/delivery/http"
 	"notification-service/internal/observability"
 	"notification-service/internal/service"
+	"notification-service/migrations"
 
+	"distributed-payment-system/shared/database"
 	sharedMiddleware "distributed-payment-system/shared/middleware"
 
 	_ "notification-service/docs"
@@ -55,6 +57,12 @@ func main() {
 		os.Exit(1)
 	}
 	defer dbPool.Close()
+
+	// Run migrations
+	if err := database.RunMigrations(cfg.PostgresDSN, migrations.FS, "."); err != nil {
+		slog.Error("run migrations failed", "error", err)
+		os.Exit(1)
+	}
 
 	rabbitConn, err := dialRabbitWithRetry(cfg.RabbitMQURL, 10, 2*time.Second)
 	if err != nil {

@@ -10,6 +10,8 @@ const navigation = [
   { name: 'Transactions', href: '/transactions', icon: 'ArrowRightLeft' },
   { name: 'Notifications', href: '/notifications', icon: 'Bell' },
   { name: 'Observability', href: '/observability', icon: 'LineChart' },
+  { name: 'Analytics', href: '/analytics', icon: 'PieChart' },
+  { name: 'Settings', href: '/settings', icon: 'Settings' },
 ];
 
 const isActive = (path: string) => {

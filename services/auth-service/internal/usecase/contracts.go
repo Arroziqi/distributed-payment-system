@@ -17,6 +17,7 @@ type UserFinder interface {
 }
 
 type UserView struct {
-	ID    string
-	Email string
+	ID    string `json:"user_id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }

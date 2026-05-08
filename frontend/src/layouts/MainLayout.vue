@@ -1,23 +1,24 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import SidebarNavigation from '@/components/organisms/SidebarNavigation.vue';
 import TopNavbar from '@/components/organisms/TopNavbar.vue';
-import { Toaster } from '@/components/ui/sonner';
+import { useAuth } from '@/features/auth/useAuth';
 
 const isSidebarOpen = ref(true);
+const { logout, user: authUser } = useAuth();
 
-const user = {
-  name: 'Alex Johnson',
-  email: 'alex@example.com',
+const user = computed(() => ({
+  name: authUser.value?.name || 'User',
+  email: authUser.value?.email || '',
   avatar: 'https://github.com/shadcn.png'
-};
+}));
 
 const handleToggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
 };
 
-const handleLogout = () => {
-  console.log('Logging out...');
+const handleLogout = async () => {
+  await logout();
 };
 </script>
 
@@ -42,9 +43,6 @@ const handleLogout = () => {
         </div>
       </main>
     </div>
-
-    <!-- Toast -->
-    <Toaster />
   </div>
 </template>
 

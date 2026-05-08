@@ -6,13 +6,19 @@
  * OpenAPI spec version: 1.0
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/vue-query';
 import type {
+  DataTag,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
   UseMutationOptions,
-  UseMutationReturnType
+  UseMutationReturnType,
+  UseQueryOptions,
+  UseQueryReturnType
 } from '@tanstack/vue-query';
 
 import {
@@ -25,10 +31,14 @@ import type {
 import type {
   AuthServiceInternalUsecaseAuthTokens,
   AuthServiceInternalUsecaseRegisterOutput,
+  AuthServiceInternalUsecaseUserView,
+  GetAuthMe401,
+  GetAuthMe500,
   InternalDeliveryHttpLoginRequest,
   InternalDeliveryHttpLogoutRequest,
   InternalDeliveryHttpRefreshRequest,
   InternalDeliveryHttpRegisterRequest,
+  InternalDeliveryHttpUpdateMeRequest,
   PostAuthLogin400,
   PostAuthLogin401,
   PostAuthLogin403,
@@ -42,7 +52,11 @@ import type {
   PostAuthRefresh500,
   PostAuthRegister400,
   PostAuthRegister409,
-  PostAuthRegister500
+  PostAuthRegister500,
+  PutAuthMe400,
+  PutAuthMe401,
+  PutAuthMe409,
+  PutAuthMe500
 } from '../auth.schemas';
 
 import { customInstance } from '../../client';
@@ -175,6 +189,139 @@ export const usePostAuthLogout = <TError = PostAuthLogout400 | PostAuthLogout500
         TContext
       > => {
       return useMutation(getPostAuthLogoutMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Get current user profile
+ */
+export const getAuthMe = (
+
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<AuthServiceInternalUsecaseUserView>(
+      {url: `/auth/me`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getGetAuthMeQueryKey = () => {
+    return [
+    'auth','me'
+    ] as const;
+    }
+
+
+export const getGetAuthMeQueryOptions = <TData = Awaited<ReturnType<typeof getAuthMe>>, TError = GetAuthMe401 | GetAuthMe500>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  getGetAuthMeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAuthMe>>> = ({ signal }) => getAuthMe(signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>
+}
+
+export type GetAuthMeQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthMe>>>
+export type GetAuthMeQueryError = GetAuthMe401 | GetAuthMe500
+
+
+/**
+ * @summary Get current user profile
+ */
+
+export function useGetAuthMe<TData = Awaited<ReturnType<typeof getAuthMe>>, TError = GetAuthMe401 | GetAuthMe500>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAuthMeQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+/**
+ * @summary Update current user profile
+ */
+export const putAuthMe = (
+    internalDeliveryHttpUpdateMeRequest: MaybeRef<InternalDeliveryHttpUpdateMeRequest>,
+ signal?: AbortSignal
+) => {
+      internalDeliveryHttpUpdateMeRequest = unref(internalDeliveryHttpUpdateMeRequest);
+
+      return customInstance<AuthServiceInternalUsecaseUserView>(
+      {url: `/auth/me`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: internalDeliveryHttpUpdateMeRequest, signal
+    },
+      );
+    }
+
+
+
+export const getPutAuthMeMutationOptions = <TError = PutAuthMe400 | PutAuthMe401 | PutAuthMe409 | PutAuthMe500,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putAuthMe>>, TError,{data: InternalDeliveryHttpUpdateMeRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof putAuthMe>>, TError,{data: InternalDeliveryHttpUpdateMeRequest}, TContext> => {
+
+const mutationKey = ['putAuthMe'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putAuthMe>>, {data: InternalDeliveryHttpUpdateMeRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putAuthMe(data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutAuthMeMutationResult = NonNullable<Awaited<ReturnType<typeof putAuthMe>>>
+    export type PutAuthMeMutationBody = InternalDeliveryHttpUpdateMeRequest
+    export type PutAuthMeMutationError = PutAuthMe400 | PutAuthMe401 | PutAuthMe409 | PutAuthMe500
+
+    /**
+ * @summary Update current user profile
+ */
+export const usePutAuthMe = <TError = PutAuthMe400 | PutAuthMe401 | PutAuthMe409 | PutAuthMe500,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putAuthMe>>, TError,{data: InternalDeliveryHttpUpdateMeRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof putAuthMe>>,
+        TError,
+        {data: InternalDeliveryHttpUpdateMeRequest},
+        TContext
+      > => {
+      return useMutation(getPutAuthMeMutationOptions(options), queryClient);
     }
     /**
  * @summary Refresh access token

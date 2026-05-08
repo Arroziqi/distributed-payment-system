@@ -4,6 +4,7 @@ import ProfileDropdown from '@/components/molecules/ProfileDropdown.vue';
 import SearchToolbar from '@/components/molecules/SearchToolbar.vue';
 import BaseIcon from '@/components/atoms/BaseIcon.vue';
 import BaseButton from '@/components/atoms/BaseButton.vue';
+import { useRouter } from 'vue-router';
 
 interface Props {
   user: {
@@ -16,7 +17,16 @@ interface Props {
 defineProps<Props>();
 defineEmits(['toggle-sidebar', 'logout']);
 
+const router = useRouter();
 const searchQuery = ref('');
+
+const handleProfile = () => {
+  router.push('/profile');
+};
+
+const handleSettings = () => {
+  router.push('/settings');
+};
 </script>
 
 <template>
@@ -39,6 +49,8 @@ const searchQuery = ref('');
       <ProfileDropdown
         :user="user"
         @logout="$emit('logout')"
+        @profile="handleProfile"
+        @settings="handleSettings"
       />
     </div>
   </header>
