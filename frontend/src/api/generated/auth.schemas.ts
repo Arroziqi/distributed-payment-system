@@ -16,6 +16,13 @@ export interface AuthServiceInternalUsecaseAuthTokens {
 export interface AuthServiceInternalUsecaseRegisterOutput {
   created_at?: string;
   email?: string;
+  name?: string;
+  user_id?: string;
+}
+
+export interface AuthServiceInternalUsecaseUserView {
+  email?: string;
+  name?: string;
   user_id?: string;
 }
 
@@ -34,8 +41,14 @@ export interface InternalDeliveryHttpRefreshRequest {
 
 export interface InternalDeliveryHttpRegisterRequest {
   email: string;
+  name: string;
   /** @minLength 8 */
   password: string;
+}
+
+export interface InternalDeliveryHttpUpdateMeRequest {
+  email?: string;
+  name?: string;
 }
 
 export type PostAuthLogin400 = {[key: string]: string};
@@ -51,6 +64,18 @@ export type PostAuthLogout200 = {[key: string]: string};
 export type PostAuthLogout400 = {[key: string]: string};
 
 export type PostAuthLogout500 = {[key: string]: string};
+
+export type GetAuthMe401 = {[key: string]: string};
+
+export type GetAuthMe500 = {[key: string]: string};
+
+export type PutAuthMe400 = {[key: string]: string};
+
+export type PutAuthMe401 = {[key: string]: string};
+
+export type PutAuthMe409 = {[key: string]: string};
+
+export type PutAuthMe500 = {[key: string]: string};
 
 export type PostAuthRefresh400 = {[key: string]: string};
 

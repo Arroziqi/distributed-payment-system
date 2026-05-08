@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import MainLayout from '@/layouts/MainLayout.vue';
+import { jwtDecode } from 'jwt-decode';
 
 const routes = [
   {
@@ -20,6 +21,18 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
+        path: 'wallet/transfer',
+        name: 'Transfer',
+        component: () => import('@/pages/wallet/TransferPage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'wallet/topup',
+        name: 'TopUp',
+        component: () => import('@/pages/wallet/TopUpPage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: 'transactions',
         name: 'Transactions',
         component: () => import('@/pages/transactions/TransactionsPage.vue'),
@@ -35,6 +48,18 @@ const routes = [
         path: 'observability',
         name: 'Observability',
         component: () => import('@/pages/observability/ObservabilityPage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/pages/profile/ProfilePage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'settings',
+        name: 'Settings',
+        component: () => import('@/pages/settings/SettingsPage.vue'),
         meta: { requiresAuth: true }
       }
     ]
@@ -66,10 +91,24 @@ const router = createRouter({
   routes
 });
 
+const isTokenExpired = (token: string) => {
+  try {
+    const decoded: any = jwtDecode(token);
+    const currentTime = Date.now() / 1000;
+    return decoded.exp < currentTime;
+  } catch {
+    return true;
+  }
+};
+
 router.beforeEach((to, _from, next) => {
-  const isAuthenticated = !!localStorage.getItem('access_token');
+  const token = localStorage.getItem('access_token');
+  const isAuthenticated = !!token && !isTokenExpired(token);
 
   if (to.meta.requiresAuth && !isAuthenticated) {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
     next('/login');
   } else if (to.meta.guest && isAuthenticated) {
     next('/');

@@ -8,7 +8,11 @@ const error = ref<string | null>(null);
 
 const handleLogin = async (data: any) => {
   error.value = null;
-  await login(data);
+  try {
+    await login(data);
+  } catch (err: any) {
+    error.value = err.response?.data?.error || err.message || 'Login failed';
+  }
 };
 </script>
 

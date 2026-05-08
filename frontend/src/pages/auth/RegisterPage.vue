@@ -12,11 +12,15 @@ const handleRegister = async (data: any) => {
     error.value = "Passwords do not match";
     return;
   }
-  await register({
-    name: data.name,
-    email: data.email,
-    password: data.password
-  });
+  try {
+    await register({
+      name: data.name,
+      email: data.email,
+      password: data.password
+    });
+  } catch (err: any) {
+    error.value = err.response?.data?.error || err.message || 'Registration failed';
+  }
 };
 </script>
 

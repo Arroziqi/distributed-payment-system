@@ -43,6 +43,15 @@ func (m *userRepoMock) GetByID(_ context.Context, id string) (domain.User, error
 	return domain.User{}, repository.ErrNotFound
 }
 
+func (m *userRepoMock) Update(_ context.Context, user domain.User) error {
+	if _, exists := m.usersByID[user.ID]; !exists {
+		return repository.ErrNotFound
+	}
+	m.usersByEmail[user.Email] = user
+	m.usersByID[user.ID] = user
+	return nil
+}
+
 type refreshRepoMock struct {
 	items map[string]string
 }
@@ -99,6 +108,7 @@ func TestRegisterSuccess(t *testing.T) {
 	uc := NewAuthUsecase(users, refresh, hasherMock{}, tokens, 15*time.Minute, 24*time.Hour)
 
 	out, err := uc.Register(context.Background(), RegisterInput{
+		Name:     "John Doe",
 		Email:    "user@example.com",
 		Password: "password123",
 	})
@@ -110,6 +120,9 @@ func TestRegisterSuccess(t *testing.T) {
 	}
 	if out.UserID == "" {
 		t.Fatal("expected generated user id")
+	}
+	if out.Name != "John Doe" {
+		t.Fatalf("unexpected name: %s", out.Name)
 	}
 }
 
@@ -191,5 +204,48 @@ func TestLoginInvalidPassword(t *testing.T) {
 	})
 	if !errors.Is(err, ErrInvalidCredentials) {
 		t.Fatalf("expected ErrInvalidCredentials, got %v", err)
+	}
+}
+
+func TestGetMeSuccess(t *testing.T) {
+	user := domain.User{
+		ID:    "u-1",
+		Name:  "John Doe",
+		Email: "user@example.com",
+	}
+	users := &userRepoMock{
+		usersByID:    map[string]domain.User{"u-1": user},
+		usersByEmail: map[string]domain.User{"user@example.com": user},
+	}
+	uc := NewAuthUsecase(users, nil, nil, nil, 0, 0)
+
+	out, err := uc.GetMe(context.Background(), "u-1")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if out.ID != "u-1" || out.Name != "John Doe" || out.Email != "user@example.com" {
+		t.Fatalf("unexpected profile: %+v", out)
+	}
+}
+
+func TestUpdateMeSuccess(t *testing.T) {
+	user := domain.User{
+		ID:    "u-1",
+		Name:  "John Doe",
+		Email: "user@example.com",
+	}
+	users := &userRepoMock{
+		usersByID:    map[string]domain.User{"u-1": user},
+		usersByEmail: map[string]domain.User{"user@example.com": user},
+	}
+	uc := NewAuthUsecase(users, nil, nil, nil, 0, 0)
+
+	newName := "John Smith"
+	out, err := uc.UpdateMe(context.Background(), "u-1", UpdateMeInput{Name: &newName})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if out.Name != "John Smith" {
+		t.Fatalf("expected name change, got %s", out.Name)
 	}
 }

@@ -9,12 +9,25 @@ definitions:
         type: string
       token_type:
         type: string
+      user_id:
+        type: string
     type: object
   auth-service_internal_usecase.RegisterOutput:
     properties:
       created_at:
         type: string
       email:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: string
+    type: object
+  auth-service_internal_usecase.UserView:
+    properties:
+      email:
+        type: string
+      name:
         type: string
       user_id:
         type: string
@@ -46,13 +59,28 @@ definitions:
   internal_delivery_http.registerRequest:
     properties:
       email:
+        example: john@example.com
+        type: string
+      name:
+        example: John Doe
         type: string
       password:
+        example: password123
         minLength: 8
         type: string
     required:
     - email
+    - name
     - password
+    type: object
+  internal_delivery_http.updateMeRequest:
+    properties:
+      email:
+        example: john.smith@example.com
+        type: string
+      name:
+        example: John Smith
+        type: string
     type: object
 info:
   contact: {}
@@ -140,6 +168,78 @@ paths:
       security:
       - BearerAuth: []
       summary: Logout user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth-service_internal_usecase.UserView'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - auth
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Update profile payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/internal_delivery_http.updateMeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth-service_internal_usecase.UserView'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
       tags:
       - auth
   /auth/refresh:
