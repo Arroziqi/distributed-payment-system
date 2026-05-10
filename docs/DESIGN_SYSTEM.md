@@ -1,26 +1,36 @@
 # Design System
 
-This project leverages Quasar's design system, customized to fit our brand identity.
+This project utilizes a modern design system built on **Tailwind CSS** and **Shadcn-vue**, ensuring a highly customizable, accessible, and performant user interface.
 
-## Colors
-- **Primary:** `#1976D2` (Blue) - Main actions, headers, primary branding.
-- **Secondary:** `#26A69A` (Teal) - Secondary actions, accents.
-- **Accent:** `#9C27B0` (Purple) - Highlights.
-- **Positive:** `#21BA45` (Green) - Success states, top-ups, positive balances.
-- **Negative:** `#C10015` (Red) - Error states, withdrawals, destructive actions.
-- **Info:** `#31CCEC` (Light Blue) - Informational messages, notifications.
-- **Warning:** `#F2C037` (Yellow) - Warnings, pending states.
+## Core Principles
+- **Utility-First**: Leverage Tailwind CSS for rapid styling without leaving the HTML.
+- **Accessibility**: Use Shadcn-vue (built on Radix Vue) to ensure all components meet ARIA standards.
+- **Consistency**: Centralized configuration in `tailwind.config.js`.
+
+## Color Palette (Tailwind Tokens)
+We use a curated HSL-based color system that supports light and dark modes seamlessly:
+
+- **Primary**: Brand color for main actions and highlights.
+- **Secondary**: For less prominent UI elements.
+- **Destructive**: Used for dangerous actions (e.g., withdrawals, account deletion).
+- **Muted**: For background elements and secondary text.
+- **Accent**: Used for hover states and subtle highlights.
 
 ## Typography
-- **Font Family:** Roboto, -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif.
-- **Headings:**
-  - `text-h1` to `text-h6` for varying levels of emphasis.
-- **Body:** Standard body copy for readability.
+- **Font Family**: Inter (sans-serif) - chosen for its clarity and modern feel.
+- **Scale**: Defined using standard Tailwind text sizes (`text-sm`, `text-lg`, `text-2xl`, etc.).
 
-## Spacing
-We utilize Quasar's standard spacing utilities (`q-ma-md`, `q-pa-lg`, etc.) based on an 8px grid.
+## Components (Shadcn-vue)
+Our UI is composed of highly reusable primitives located in `src/components/ui/`:
+- **Buttons**: Variant-based (`default`, `outline`, `ghost`, `destructive`).
+- **Cards**: For grouping dashboard information and transaction details.
+- **Dialogs/Modals**: Accessible overlays for forms (e.g., Top-up, Transfer).
+- **Toasts**: Auto-dismissing notifications for user feedback (powered by `vue-sonner`).
+- **Progress Bars**: Used in modals and profile update feedback.
 
-## Forms & Feedback
-- **Inputs:** Outlined style, dense padding.
-- **Buttons:** Flat, Outline, or Solid depending on hierarchy.
-- **Feedback:** Quasar Notify plugin for toasts (top-right corner). Spinners (`q-spinner`) for loading states.
+## Layout & Spacing
+- **Grid**: 4px base unit, standardizing on Tailwind's spacing scale (`p-4`, `m-2`, `gap-6`).
+- **Responsive**: Mobile-first design using Tailwind's breakpoints (`sm`, `md`, `lg`, `xl`).
+
+## Design Tokens
+Tokens are managed in `frontend/tailwind.config.js`, including custom animations and color extensions.

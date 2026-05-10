@@ -1,9 +1,11 @@
 import { computed } from 'vue';
 import { useGetWalletsUserIDBalance, usePostWalletTopups, usePostWalletTransfers, usePostWallets } from '@/api/generated/wallet/wallet';
 import { toast } from 'vue-sonner';
+import { useAuthStore } from '@/stores/auth.store';
 
 export const useWallet = () => {
-  const userId = localStorage.getItem('user_id') || '';
+  const authStore = useAuthStore();
+  const userId = authStore.currentUser?.id || '';
 
   const balanceQuery = useGetWalletsUserIDBalance(userId, {
     query: {

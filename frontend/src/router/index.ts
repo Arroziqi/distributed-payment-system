@@ -91,24 +91,20 @@ const router = createRouter({
   routes
 });
 
-const isTokenExpired = (token: string) => {
-  try {
-    const decoded: any = jwtDecode(token);
-    const currentTime = Date.now() / 1000;
-    return decoded.exp < currentTime;
-  } catch {
-    return true;
-  }
-};
+import { useAuthStore } from '@/stores/auth.store';
 
-router.beforeEach((to, _from, next) => {
-  const token = localStorage.getItem('access_token');
-  const isAuthenticated = !!token && !isTokenExpired(token);
+router.beforeEach(async (to, _from, next) => {
+  const authStore = useAuthStore();
+  
+  // Ensure auth is initialized (check tokens, maybe fetch user)
+  if (authStore.accessToken && !authStore.currentUser) {
+    await authStore.initializeAuth();
+  }
+
+  const isAuthenticated = authStore.isAuthenticated;
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    authStore.logout(); // Ensure state is clean
     next('/login');
   } else if (to.meta.guest && isAuthenticated) {
     next('/');

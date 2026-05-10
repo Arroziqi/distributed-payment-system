@@ -11,14 +11,32 @@ The system consists of four independent microservices that communicate synchrono
 3. **Transaction Service**: Orchestrates money transfers between wallets. Employs idempotency keys to prevent duplicate transactions and publishes events to the message broker upon success.
 4. **Notification Service**: Consumes events from RabbitMQ and handles asynchronous notifications to users.
 
-### Tech Stack
-- **Language**: Go (Golang)
-- **Frontend**: Vue 3 + Quasar (TypeScript, Pinia, Atomic Design)
-- **Component Docs**: Storybook
-- **Databases**: PostgreSQL (per service), Redis (caching and idempotency)
-- **Message Broker**: RabbitMQ
-- **Observability**: Prometheus (Metrics), Grafana (Dashboards)
-- **Documentation**: Swagger/OpenAPI
+## Tech Stack Overview
+
+Our system leverages a modern, robust, and scalable stack designed for high performance and maintainability. For a detailed view of our project milestones, see the [Versioning Roadmap](./docs/ROADMAP.md).
+
+### Core Technologies
+- **[Go (Golang)](https://go.dev/)**: The backbone of our microservices. Chosen for its exceptional performance, efficient concurrency model (Goroutines), and strong typing, making it ideal for high-throughput payment processing.
+- **[Vue 3](https://vuejs.org/)**: A progressive JavaScript framework used for building the frontend dashboard. We utilize the **Composition API** for better logic reuse and scalability.
+- **[Vite](https://vitejs.dev/)**: A lightning-fast build tool that powers our frontend development experience and optimized production builds.
+- **[Tailwind CSS](https://tailwindcss.com/)**: A utility-first CSS framework for rapid UI development, ensuring a consistent and responsive design across the application.
+- **[Shadcn-vue](https://www.shadcn-vue.com/)**: A collection of high-quality, accessible UI components that allow us to build a premium user interface quickly.
+
+### Data & Messaging
+- **[PostgreSQL](https://www.postgresql.org/)**: Our primary relational database. Each microservice manages its own dedicated PostgreSQL instance to ensure strict data isolation and loose coupling.
+- **[Redis](https://redis.io/)**: Used for high-speed caching, session management, and ensuring transaction **idempotency**, preventing duplicate processing of the same request.
+- **[RabbitMQ](https://www.rabbitmq.com/)**: A robust message broker that facilitates asynchronous communication between services (e.g., triggering notifications after a successful transaction).
+
+### Infrastructure & Observability
+- **[Docker & Docker Compose](https://www.docker.com/)**: Containerization technology used to ensure consistent environments from development to production.
+- **[Loki & Promtail](https://grafana.com/oss/loki/)**: Our centralized logging solution. Promtail collects logs from all containers and ships them to Loki for aggregation.
+- **[Prometheus](https://prometheus.io/)**: A monitoring system that collects real-time metrics from our services to track health and performance.
+- **[Grafana](https://grafana.com/)**: The visualization layer for our metrics and logs, providing beautiful, real-time dashboards for system monitoring.
+
+### Tooling & Documentation
+- **[Swagger/OpenAPI](https://swagger.io/)**: Automatically generated API documentation that allows for easy discovery and interactive testing of our service endpoints.
+- **[golang-migrate](https://github.com/golang-migrate/migrate)**: Handles database schema versioning and migrations directly within the application code, ensuring database consistency across deployments.
+- **[Storybook](https://storybook.js.org/)**: Used for developing and documenting frontend UI components in isolation.
 
 ## Setup Instructions & Docker Compose Usage
 
@@ -48,7 +66,7 @@ Once the system is running via `docker compose`, the services are bound to the f
 
 | Service | Port | Base URL | Swagger UI URL / Notes |
 |---------|------|----------|----------------|
-| **Frontend UI** | `8000` | `http://localhost:8000` | Quasar Atomic Design App |
+| **Frontend UI** | `8000` | `http://localhost:8000` | Vue 3 + Tailwind CSS App |
 | **Storybook** | `6006` | `http://localhost:6006` | Component Documentation |
 | **Auth** | `8081` | `http://localhost:8081` | [http://localhost:8081/swagger/index.html](http://localhost:8081/swagger/index.html) |
 | **Wallet** | `8082` | `http://localhost:8082` | [http://localhost:8082/swagger/index.html](http://localhost:8082/swagger/index.html) |
@@ -80,7 +98,7 @@ All internal application logic requires authentication via a JWT Bearer Token, i
 
 ## API Testing Flow Summary
 
-For a full step-by-step tutorial on testing the endpoints using Swagger, see [API_USAGE.md](./API_USAGE.md).
+For a full step-by-step tutorial on testing the endpoints using Swagger, see [API_USAGE.md](./docs/API_USAGE.md).
 
 **Quick Summary:**
 1. **Register** a user via Auth Service (`POST /auth/register`).
@@ -91,7 +109,7 @@ For a full step-by-step tutorial on testing the endpoints using Swagger, see [AP
 6. **Transfer** funds via Transaction Service (`POST /transactions/payments`). Make sure to provide an `Idempotency-Key` header.
 7. **Check History** using Transaction Service (`GET /transactions`).
 
-For visual sequence diagrams of these flows, check out [SYSTEM_FLOW.md](./SYSTEM_FLOW.md).
+For visual sequence diagrams of these flows, check out [SYSTEM_FLOW.md](./docs/SYSTEM_FLOW.md).
 
 ## Event Flow & Concurrency
 

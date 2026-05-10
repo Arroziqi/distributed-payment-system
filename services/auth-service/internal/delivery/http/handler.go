@@ -30,6 +30,12 @@ func (h AuthHandler) RegisterRoutes(r *gin.Engine, secret string) {
 	protected.GET("/me", h.getMe)
 	protected.PUT("/me", h.updateMe)
 	protected.POST("/logout", h.logout)
+
+	// API v1 routes for profile integration
+	v1 := r.Group("/api/v1")
+	v1.Use(AuthMiddleware(secret))
+	v1.GET("/users/me", h.getMe)
+	v1.PUT("/users/me", h.updateMe)
 }
 
 type registerRequest struct {
@@ -117,6 +123,10 @@ func (h AuthHandler) login(c *gin.Context) {
 		return
 	}
 
+	// Set refresh token in HttpOnly cookie
+	// Using a long TTL (e.g., 30 days) for the cookie
+	c.SetCookie("refresh_token", out.RefreshToken, 30*24*60*60, "/", "", false, true)
+
 	c.JSON(http.StatusOK, out)
 }
 
@@ -137,14 +147,23 @@ type refreshRequest struct {
 // @Failure 500 {object} map[string]string
 // @Router /auth/refresh [post]
 func (h AuthHandler) refresh(c *gin.Context) {
-	var req refreshRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
-		return
+	var refreshToken string
+	var err error
+
+	// Try to get refresh token from cookie first
+	refreshToken, err = c.Cookie("refresh_token")
+	if err != nil {
+		// Fallback to JSON body if cookie is missing
+		var req refreshRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload: refresh_token is required"})
+			return
+		}
+		refreshToken = req.RefreshToken
 	}
 
 	out, err := h.auth.Refresh(c.Request.Context(), usecase.RefreshInput{
-		RefreshToken: req.RefreshToken,
+		RefreshToken: refreshToken,
 	})
 	if err != nil {
 		switch {
@@ -159,6 +178,9 @@ func (h AuthHandler) refresh(c *gin.Context) {
 		}
 		return
 	}
+
+	// Update refresh token in cookie
+	c.SetCookie("refresh_token", out.RefreshToken, 30*24*60*60, "/", "", false, true)
 
 	c.JSON(http.StatusOK, out)
 }
@@ -179,14 +201,23 @@ type logoutRequest struct {
 // @Failure 500 {object} map[string]string
 // @Router /auth/logout [post]
 func (h AuthHandler) logout(c *gin.Context) {
-	var req logoutRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
-		return
+	var refreshToken string
+	var err error
+
+	// Try to get refresh token from cookie first
+	refreshToken, err = c.Cookie("refresh_token")
+	if err != nil {
+		// Fallback to JSON body if cookie is missing
+		var req logoutRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload: refresh_token is required"})
+			return
+		}
+		refreshToken = req.RefreshToken
 	}
 
 	if err := h.auth.Logout(c.Request.Context(), usecase.LogoutInput{
-		RefreshToken: req.RefreshToken,
+		RefreshToken: refreshToken,
 	}); err != nil {
 		if errors.Is(err, usecase.ErrInvalidInput) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -195,6 +226,9 @@ func (h AuthHandler) logout(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
+
+	// Clear refresh token cookie
+	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{"message": "logout successful"})
 }

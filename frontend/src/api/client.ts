@@ -8,9 +8,27 @@ const NOTIFICATION_API = import.meta.env.VITE_NOTIFICATION_API || 'http://localh
 
 export const AXIOS_INSTANCE = axios.create();
 
+import { useAuthStore } from '@/stores/auth.store';
+
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 AXIOS_INSTANCE.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    const authStore = useAuthStore();
+    const token = authStore.accessToken;
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -20,6 +38,8 @@ AXIOS_INSTANCE.interceptors.request.use(
       config.baseURL = AUTH_API;
     } else if (config.url?.startsWith('/wallet') || config.url?.startsWith('/wallets')) {
       config.baseURL = WALLET_API;
+    } else if (config.url?.startsWith('/api/v1/users')) {
+      config.baseURL = AUTH_API;
     } else if (config.url?.startsWith('/transactions')) {
       config.baseURL = TRANSACTION_API;
     } else if (config.url?.startsWith('/notifications')) {
@@ -33,18 +53,44 @@ AXIOS_INSTANCE.interceptors.request.use(
 
 AXIOS_INSTANCE.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const isAuthRequest = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
+  async (error) => {
+    const originalRequest = error.config;
+    const authStore = useAuthStore();
+
+    const isAuthRequest = originalRequest.url?.includes('/auth/login') || 
+                         originalRequest.url?.includes('/auth/register') ||
+                         originalRequest.url?.includes('/auth/refresh');
     
-    if (error.response?.status === 401 && !isAuthRequest) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('user_id');
-      
-      // Only redirect if not already on login page to avoid instant reloads
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+    if (error.response?.status === 401 && !isAuthRequest && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return AXIOS_INSTANCE(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const newToken = await authStore.refreshToken();
+        processQueue(null, newToken);
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return AXIOS_INSTANCE(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        authStore.logout();
+        
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
     return Promise.reject(error);
