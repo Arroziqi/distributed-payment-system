@@ -38,8 +38,6 @@ AXIOS_INSTANCE.interceptors.request.use(
       config.baseURL = AUTH_API;
     } else if (config.url?.startsWith('/wallet') || config.url?.startsWith('/wallets')) {
       config.baseURL = WALLET_API;
-    } else if (config.url?.startsWith('/api/v1/users')) {
-      config.baseURL = AUTH_API;
     } else if (config.url?.startsWith('/transactions')) {
       config.baseURL = TRANSACTION_API;
     } else if (config.url?.startsWith('/notifications')) {

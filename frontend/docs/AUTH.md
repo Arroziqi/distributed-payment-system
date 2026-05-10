@@ -22,7 +22,7 @@ The authentication system is built on top of **Pinia** for state management and 
 When a user logs in:
 1. Credentials are sent to `/auth/login`.
 2. Backend returns an `access_token` in the JSON body and sets a `refresh_token` in an `HttpOnly` cookie.
-3. The Pinia store saves the `access_token` and fetches the user profile from `/api/v1/users/me`.
+3. The Pinia store saves the `access_token` and fetches the user profile from `/auth/me`.
 4. The state is automatically persisted to `localStorage` via `pinia-plugin-persistedstate` (except for sensitive logic handled by cookies).
 
 ```mermaid
@@ -34,7 +34,7 @@ sequenceDiagram
     UI->>Store: login(credentials)
     Store->>API: POST /auth/login
     API-->>Store: 200 OK (access_token, cookie: refresh_token)
-    Store->>API: GET /api/v1/users/me (with Bearer token)
+    Store->>API: GET /auth/me (with Bearer token)
     API-->>Store: 200 OK (user profile)
     Store-->>UI: Success
     UI->>UI: Redirect to Dashboard
@@ -90,7 +90,7 @@ sequenceDiagram
 
 ### 4. Profile Fetch/Sync
 
-The profile is fetched after login and kept in Pinia. Any updates to the profile via `PUT /api/v1/users/me` will trigger a refresh of the store state.
+The profile is fetched after login and kept in Pinia. Any updates to the profile via `PUT /auth/me` will trigger a refresh of the store state.
 
 ```mermaid
 sequenceDiagram
@@ -98,10 +98,10 @@ sequenceDiagram
     participant Store as Pinia Auth Store
     participant API as Backend (Auth Service)
     
-    UI->>API: PUT /api/v1/users/me
+    UI->>API: PUT /auth/me
     API-->>UI: 200 OK (Updated User)
     UI->>Store: fetchCurrentUser()
-    Store->>API: GET /api/v1/users/me
+    Store->>API: GET /auth/me
     API-->>Store: 200 OK (New Profile Data)
     Store->>Store: Update currentUser state
 ```

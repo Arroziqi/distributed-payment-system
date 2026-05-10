@@ -38,8 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true;
     error.value = null;
     try {
-      // Using the new v1 endpoint
-      const response = await AXIOS_INSTANCE.get('/api/v1/users/me');
+      const response = await AXIOS_INSTANCE.get('/auth/me');
       currentUser.value = response.data;
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message || 'Failed to fetch user profile';

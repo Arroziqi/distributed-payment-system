@@ -30,12 +30,6 @@ func (h AuthHandler) RegisterRoutes(r *gin.Engine, secret string) {
 	protected.GET("/me", h.getMe)
 	protected.PUT("/me", h.updateMe)
 	protected.POST("/logout", h.logout)
-
-	// API v1 routes for profile integration
-	v1 := r.Group("/api/v1")
-	v1.Use(AuthMiddleware(secret))
-	v1.GET("/users/me", h.getMe)
-	v1.PUT("/users/me", h.updateMe)
 }
 
 type registerRequest struct {
