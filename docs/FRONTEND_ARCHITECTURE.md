@@ -2,7 +2,7 @@
 
 ## Stack
 - **Framework:** Vue.js 3
-- **UI Toolkit:** Quasar Framework
+- **UI Toolkit:** Tailwind CSS + Shadcn-vue
 - **State Management:** Pinia
 - **HTTP Client:** Axios
 - **Component Explorer:** Storybook

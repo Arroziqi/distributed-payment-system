@@ -4,7 +4,7 @@
 The system consists of a Vue 3 frontend communicating with multiple Golang microservices. The backend services utilize PostgreSQL for persistence, Redis for caching, and RabbitMQ for asynchronous event-driven communication. An observability stack monitors the ecosystem.
 
 ### Frontend
-- **Vue 3 + Quasar**: Atomic Design structure with Storybook. Interacts with backend services via Axios.
+- **Vue 3 + Tailwind CSS**: Atomic Design structure with Storybook and Shadcn-vue components. Interacts with backend services via Axios.
 
 ### Backend Services
 1. **Auth Service**: Manages user registration, login, and JWT token issuance.
